@@ -191,10 +191,16 @@ class TikTokService {
 
 // Export a singleton instance
 // In production, you should get these from environment variables
+const getRedirectUri = () => {
+  // Use current origin for redirect URI
+  const origin = window.location.origin
+  return import.meta.env.VITE_TIKTOK_REDIRECT_URI || `${origin}/tiktok-callback`
+}
+
 const tiktokConfig: TikTokAuthConfig = {
   clientKey: import.meta.env.VITE_TIKTOK_CLIENT_KEY || '',
   clientSecret: import.meta.env.VITE_TIKTOK_CLIENT_SECRET || '',
-  redirectUri: import.meta.env.VITE_TIKTOK_REDIRECT_URI || `${window.location.origin}/tiktok-callback`,
+  redirectUri: getRedirectUri(),
 };
 
 export const tiktokService = new TikTokService(tiktokConfig);

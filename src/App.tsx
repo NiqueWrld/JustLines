@@ -31,6 +31,10 @@ function App() {
     const handleMessage = (event: MessageEvent) => {
       if (event.data.type === 'TIKTOK_AUTH_SUCCESS') {
         setTiktokAuthenticated(true)
+        console.log('TikTok authentication successful!')
+      } else if (event.data.type === 'TIKTOK_AUTH_ERROR') {
+        console.error('TikTok authentication failed:', event.data.error)
+        setTiktokAuthenticated(false)
       }
     }
     
