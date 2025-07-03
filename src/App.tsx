@@ -740,58 +740,100 @@ function App() {
                   This will create a 30-second video with your quote overlay
                 </p>
                 
-                {/* TikTok Upload Section */}
+                {/* TikTok Upload Toggle */}
                 <div className="mt-6 border-t border-white/20 pt-6">
-                  <h4 className="text-lg font-semibold text-white mb-4 flex items-center justify-center">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12.5 0C5.6 0 0 5.6 0 12.5S5.6 25 12.5 25 25 19.4 25 12.5 19.4 0 12.5 0zM19.3 8.9c-1.2 0-2.4-.4-3.3-1.1v5.1c0 2.6-2.1 4.7-4.7 4.7s-4.7-2.1-4.7-4.7 2.1-4.7 4.7-4.7c.3 0 .5 0 .8.1v2.3c-.3-.1-.5-.1-.8-.1-1.3 0-2.4 1.1-2.4 2.4s1.1 2.4 2.4 2.4 2.4-1.1 2.4-2.4V2.3h2.3c.4 2.1 2.1 3.8 4.2 4.2v2.4z"/>
-                    </svg>
-                    Upload to TikTok
-                  </h4>
-                  
-                  {!tiktokAuthenticated ? (
+                  {!showTikTokOptions ? (
                     <div className="text-center">
                       <button
-                        onClick={handleTikTokAuth}
+                        onClick={() => setShowTikTokOptions(true)}
                         className="bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black text-white font-semibold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105 shadow-lg flex items-center mx-auto"
                       >
                         <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12.5 0C5.6 0 0 5.6 0 12.5S5.6 25 12.5 25 25 19.4 25 12.5 19.4 0 12.5 0zM19.3 8.9c-1.2 0-2.4-.4-3.3-1.1v5.1c0 2.6-2.1 4.7-4.7 4.7s-4.7-2.1-4.7-4.7 2.1-4.7 4.7-4.7c.3 0 .5 0 .8.1v2.3c-.3-.1-.5-.1-.8-.1-1.3 0-2.4 1.1-2.4 2.4s1.1 2.4 2.4 2.4 2.4-1.1 2.4-2.4V2.3h2.3c.4 2.1 2.1 3.8 4.2 4.2v2.4z"/>
                         </svg>
-                        Connect to TikTok
+                        Share to TikTok
                       </button>
                       <p className="text-gray-400 text-sm mt-2">
-                        Connect your TikTok account to upload videos directly
+                        Upload your video directly to TikTok
                       </p>
                     </div>
                   ) : (
-                    <div className="text-center">
-                      <button
-                        onClick={createAndUploadToTikTok}
-                        disabled={uploadingToTikTok}
-                        className="bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105 disabled:scale-100 shadow-lg flex items-center mx-auto"
-                      >
-                        {uploadingToTikTok ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Uploading to TikTok...
-                          </>
-                        ) : (
-                          <>
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-lg font-semibold text-white flex items-center">
+                          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12.5 0C5.6 0 0 5.6 0 12.5S5.6 25 12.5 25 25 19.4 25 12.5 19.4 0 12.5 0zM19.3 8.9c-1.2 0-2.4-.4-3.3-1.1v5.1c0 2.6-2.1 4.7-4.7 4.7s-4.7-2.1-4.7-4.7 2.1-4.7 4.7-4.7c.3 0 .5 0 .8.1v2.3c-.3-.1-.5-.1-.8-.1-1.3 0-2.4 1.1-2.4 2.4s1.1 2.4 2.4 2.4 2.4-1.1 2.4-2.4V2.3h2.3c.4 2.1 2.1 3.8 4.2 4.2v2.4z"/>
+                          </svg>
+                          Upload to TikTok
+                        </h4>
+                        <button
+                          onClick={() => setShowTikTokOptions(false)}
+                          className="text-white/60 hover:text-white transition-colors"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      {!tiktokAuthenticated ? (
+                        <div className="text-center">
+                          <button
+                            onClick={handleTikTokAuth}
+                            className="bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black text-white font-semibold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105 shadow-lg flex items-center mx-auto"
+                          >
                             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M12.5 0C5.6 0 0 5.6 0 12.5S5.6 25 12.5 25 25 19.4 25 12.5 19.4 0 12.5 0zM19.3 8.9c-1.2 0-2.4-.4-3.3-1.1v5.1c0 2.6-2.1 4.7-4.7 4.7s-4.7-2.1-4.7-4.7 2.1-4.7 4.7-4.7c.3 0 .5 0 .8.1v2.3c-.3-.1-.5-.1-.8-.1-1.3 0-2.4 1.1-2.4 2.4s1.1 2.4 2.4 2.4 2.4-1.1 2.4-2.4V2.3h2.3c.4 2.1 2.1 3.8 4.2 4.2v2.4z"/>
                             </svg>
-                            Upload to TikTok
-                          </>
-                        )}
-                      </button>
-                      <p className="text-gray-400 text-sm mt-2">
-                        This will create and upload your video directly to TikTok
-                      </p>
-                    </div>
+                            Connect to TikTok
+                          </button>
+                          <p className="text-gray-400 text-sm mt-2">
+                            Connect your TikTok account to upload videos directly
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <div className="bg-green-500/20 border border-green-500 text-green-300 px-4 py-2 rounded-lg mb-4 inline-flex items-center">
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            TikTok Connected
+                          </div>
+                          <div>
+                            <button
+                              onClick={createAndUploadToTikTok}
+                              disabled={uploadingToTikTok}
+                              className="bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105 disabled:scale-100 shadow-lg flex items-center mx-auto"
+                            >
+                              {uploadingToTikTok ? (
+                                <>
+                                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Uploading to TikTok...
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                  </svg>
+                                  Upload to TikTok
+                                </>
+                              )}
+                            </button>
+                            <p className="text-gray-400 text-sm mt-2">
+                              This will create and upload your video directly to TikTok
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
                   )}
                 </div>
               </motion.div>
