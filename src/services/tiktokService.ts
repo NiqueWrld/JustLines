@@ -39,6 +39,27 @@ class TikTokService {
     this.config = config;
   }
 
+  // Helper method to create fetch with timeout
+  private async fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = 30000): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timed out');
+      }
+      throw error;
+    }
+  }
+
   // Step 1: Get authorization URL for OAuth2 flow
   getAuthorizationUrl(): string {
     const params = new URLSearchParams({
@@ -54,7 +75,7 @@ class TikTokService {
 
   // Step 2: Exchange authorization code for access token
   async exchangeCodeForToken(code: string): Promise<string> {
-    const response = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
+    const response = await this.fetchWithTimeout('https://open.tiktokapis.com/v2/oauth/token/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -66,7 +87,7 @@ class TikTokService {
         grant_type: 'authorization_code',
         redirect_uri: this.config.redirectUri,
       }),
-    });
+    }, 15000); // 15 second timeout for auth
 
     const data = await response.json();
     
@@ -84,7 +105,7 @@ class TikTokService {
       throw new Error('Access token is required. Please authenticate first.');
     }
 
-    const response = await fetch(`${this.baseUrl}/post/publish/video/init/`, {
+    const response = await this.fetchWithTimeout(`${this.baseUrl}/post/publish/video/init/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.config.accessToken}`,
@@ -106,7 +127,7 @@ class TikTokService {
           video_size: 0, // Will be set when uploading
         },
       }),
-    });
+    }, 20000); // 20 second timeout for init
 
     const data = await response.json();
     
@@ -122,10 +143,10 @@ class TikTokService {
     const formData = new FormData();
     formData.append('video', videoBlob, 'video.webm');
 
-    const response = await fetch(uploadUrl, {
+    const response = await this.fetchWithTimeout(uploadUrl, {
       method: 'PUT',
       body: formData,
-    });
+    }, 45000); // 45 second timeout for video upload
 
     if (!response.ok) {
       throw new Error(`Failed to upload video: ${response.statusText}`);
@@ -138,7 +159,7 @@ class TikTokService {
       throw new Error('Access token is required. Please authenticate first.');
     }
 
-    const response = await fetch(`${this.baseUrl}/post/publish/`, {
+    const response = await this.fetchWithTimeout(`${this.baseUrl}/post/publish/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.config.accessToken}`,
@@ -147,7 +168,7 @@ class TikTokService {
       body: JSON.stringify({
         publish_id: publishId,
       }),
-    });
+    }, 20000); // 20 second timeout for publish
 
     const data = await response.json();
     

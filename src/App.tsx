@@ -17,6 +17,7 @@ function App() {
   const [downloading, setDownloading] = useState(false)
   const [downloadDisabled, setDownloadDisabled] = useState(false)
   const [uploadingToTikTok, setUploadingToTikTok] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState('')
   const [tiktokAuthenticated, setTiktokAuthenticated] = useState(false)
   const [showTikTokOptions, setShowTikTokOptions] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -145,6 +146,15 @@ function App() {
         videoElement.load()
       })
 
+      // Ensure video metadata (including duration) is loaded
+      await new Promise<void>((resolve) => {
+        if (videoElement.readyState >= 1) { // HAVE_METADATA
+          resolve()
+        } else {
+          videoElement.onloadedmetadata = () => resolve()
+        }
+      })
+
       // Set up MediaRecorder to capture canvas
       const stream = canvas.captureStream(30) // 30 FPS
       const mediaRecorder = new MediaRecorder(stream, {
@@ -209,8 +219,14 @@ function App() {
       // Start video playback
       videoElement.play()
 
-      // Record for 30 seconds
-      const recordingDuration = 30000 // 30 seconds
+      // Record for the duration of the video
+      const videoDuration = videoElement.duration
+      const recordingDuration = videoDuration && videoDuration > 0 
+        ? Math.floor(videoDuration * 1000) // Convert to milliseconds
+        : 15000 // Fallback to 15 seconds if duration is not available
+      
+      console.log(`Recording video for ${recordingDuration / 1000} seconds (video duration: ${videoDuration}s)`)
+      
       let animationId: number
 
       const animate = () => {
@@ -220,7 +236,7 @@ function App() {
 
       animate()
 
-      // Stop recording after duration
+      // Stop recording after video duration
       setTimeout(() => {
         cancelAnimationFrame(animationId)
         mediaRecorder.stop()
@@ -267,6 +283,7 @@ function App() {
 
     try {
       setUploadingToTikTok(true)
+      setUploadProgress('Preparing upload...')
       
       const uploadOptions = {
         title: `"${selectedQuote.q}" - ${selectedQuote.a}`,
@@ -277,16 +294,62 @@ function App() {
         disable_stitch: false,
       }
 
-      await tiktokService.uploadVideo(videoBlob, uploadOptions)
+      // Create a timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Upload timed out after 60 seconds'))
+        }, 60000) // 60 second timeout
+      })
+
+      // Create an upload promise with progress updates
+      const uploadPromise = (async () => {
+        setUploadProgress('Initializing upload...')
+        await new Promise(resolve => setTimeout(resolve, 500)) // Small delay to show progress
+        
+        setUploadProgress('Uploading video...')
+        await tiktokService.uploadVideo(videoBlob, uploadOptions)
+        
+        setUploadProgress('Publishing to TikTok...')
+        await new Promise(resolve => setTimeout(resolve, 500)) // Small delay to show progress
+      })()
+
+      // Race the upload against the timeout
+      await Promise.race([uploadPromise, timeoutPromise])
       
+      setUploadProgress('Upload complete!')
       alert('Video uploaded to TikTok successfully!')
       setShowTikTokOptions(false)
       
     } catch (error) {
       console.error('TikTok upload failed:', error)
-      alert('Failed to upload to TikTok. Please try again.')
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('timed out')) {
+          setUploadProgress('Upload timed out')
+          alert('TikTok upload timed out. Please check your internet connection and try again.')
+        } else if (error.message.includes('authenticate') || error.message.includes('token')) {
+          setUploadProgress('Authentication failed')
+          alert('TikTok authentication failed. Please reconnect your TikTok account.')
+          setTiktokAuthenticated(false)
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          setUploadProgress('Network error')
+          alert('Network error occurred. Please check your internet connection and try again.')
+        } else if (error.message.includes('rate') || error.message.includes('limit')) {
+          setUploadProgress('Rate limit exceeded')
+          alert('TikTok rate limit exceeded. Please wait a few minutes and try again.')
+        } else {
+          setUploadProgress('Upload failed')
+          alert(`Failed to upload to TikTok: ${error.message}`)
+        }
+      } else {
+        setUploadProgress('Upload failed')
+        alert('Failed to upload to TikTok. Please try again.')
+      }
     } finally {
       setUploadingToTikTok(false)
+      // Clear progress after a short delay
+      setTimeout(() => setUploadProgress(''), 2000)
     }
   }
 
@@ -316,6 +379,15 @@ function App() {
           resolve()
         }
         videoElement.load()
+      })
+
+      // Ensure video metadata (including duration) is loaded
+      await new Promise<void>((resolve) => {
+        if (videoElement.readyState >= 1) { // HAVE_METADATA
+          resolve()
+        } else {
+          videoElement.onloadedmetadata = () => resolve()
+        }
       })
 
       const stream = canvas.captureStream(30)
@@ -364,7 +436,13 @@ function App() {
 
       videoElement.play()
 
-      const recordingDuration = 30000
+      const videoDuration = videoElement.duration
+      const recordingDuration = videoDuration && videoDuration > 0 
+        ? Math.floor(videoDuration * 1000) // Convert to milliseconds
+        : 15000 // Fallback to 15 seconds if duration is not available
+      
+      console.log(`Recording TikTok video for ${recordingDuration / 1000} seconds (video duration: ${videoDuration}s)`)
+      
       let animationId: number
 
       const animate = () => {
@@ -737,7 +815,7 @@ function App() {
                   )}
                 </motion.button>
                 <p className="text-gray-300 text-sm mt-3">
-                  This will create a 30-second video with your quote overlay
+                  This will create a video with your quote overlay matching the background video length
                 </p>
                 
                 {/* TikTok Upload Toggle */}
