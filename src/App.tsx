@@ -463,7 +463,7 @@ function App() {
                 <p className="text-white mt-4 text-lg">Finding perfect videos...</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {backgroundVideos.map((video, index) => (
                   <motion.div
                     key={video.id}
@@ -535,15 +535,6 @@ function App() {
                       <div className="flex justify-between items-center text-white text-sm">
                         <span>{video.duration}s</span>
                         <span>{video.width}x{video.height}</span>
-                      </div>
-
-                      <div className="mt-2 text-center">
-                        <span className={`text-xs px-2 py-1 rounded-full ${selectedVideo?.id === video.id
-                            ? 'text-pink-300 bg-pink-500/20'
-                            : 'text-gray-400 bg-white/10'
-                          }`}>
-                          {selectedVideo?.id === video.id ? 'Selected' : 'Select This Video'}
-                        </span>
                       </div>
                     </div>
                   </motion.div>
