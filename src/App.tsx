@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { fetchQuotes } from './services/quoteService'
 import { analyzeQuoteTopic, getTopicColor, getTopicIcon } from './services/topicService'
 import { fetchPexelsVideos } from './services/videoService'
+import { tiktokService } from './services/tiktokService'
 import type { Quote } from './services/quoteService'
 import type { PexelsVideo } from './services/videoService'
 
@@ -15,11 +16,26 @@ function App() {
   const [videosLoading, setVideosLoading] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [downloadDisabled, setDownloadDisabled] = useState(false)
+  const [uploadingToTikTok, setUploadingToTikTok] = useState(false)
+  const [tiktokAuthenticated, setTiktokAuthenticated] = useState(false)
+  const [showTikTokOptions, setShowTikTokOptions] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     loadQuotes()
+    // Check if TikTok is authenticated
+    setTiktokAuthenticated(tiktokService.isAuthenticated())
+    
+    // Listen for TikTok authentication success
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'TIKTOK_AUTH_SUCCESS') {
+        setTiktokAuthenticated(true)
+      }
+    }
+    
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
   }, [])
 
   const loadQuotes = async () => {
@@ -81,6 +97,8 @@ function App() {
     setVideosLoading(false)
     setDownloading(false)
     setDownloadDisabled(false)
+    setUploadingToTikTok(false)
+    setShowTikTokOptions(false)
   }
 
   const handleVideoSelect = (video: PexelsVideo) => {
@@ -231,6 +249,138 @@ function App() {
     }
     lines.push(currentLine)
     return lines
+  }
+
+  const handleTikTokAuth = () => {
+    const authUrl = tiktokService.getAuthorizationUrl()
+    window.open(authUrl, '_blank', 'width=600,height=600')
+  }
+
+  const uploadToTikTok = async (videoBlob: Blob) => {
+    if (!selectedQuote || !tiktokService.isAuthenticated()) {
+      return
+    }
+
+    try {
+      setUploadingToTikTok(true)
+      
+      const uploadOptions = {
+        title: `"${selectedQuote.q}" - ${selectedQuote.a}`,
+        description: `Inspirational quote: "${selectedQuote.q}" by ${selectedQuote.a}. Created with JustLines #quotes #inspiration #motivation`,
+        privacy_level: 'PUBLIC_TO_EVERYONE' as const,
+        disable_duet: false,
+        disable_comment: false,
+        disable_stitch: false,
+      }
+
+      await tiktokService.uploadVideo(videoBlob, uploadOptions)
+      
+      alert('Video uploaded to TikTok successfully!')
+      setShowTikTokOptions(false)
+      
+    } catch (error) {
+      console.error('TikTok upload failed:', error)
+      alert('Failed to upload to TikTok. Please try again.')
+    } finally {
+      setUploadingToTikTok(false)
+    }
+  }
+
+  const createAndUploadToTikTok = async () => {
+    if (!selectedVideo || !selectedQuote) {
+      return
+    }
+
+    try {
+      setUploadingToTikTok(true)
+
+      // Create video blob (similar to download function but return blob instead of download)
+      const canvas = document.createElement('canvas')
+      canvas.width = 315
+      canvas.height = 560
+      const ctx = canvas.getContext('2d')!
+
+      const videoElement = document.createElement('video')
+      videoElement.src = selectedVideo.video_files[0]?.link
+      videoElement.muted = true
+      videoElement.crossOrigin = 'anonymous'
+      videoElement.loop = true
+
+      await new Promise<void>((resolve) => {
+        videoElement.onloadeddata = () => {
+          videoElement.currentTime = 0
+          resolve()
+        }
+        videoElement.load()
+      })
+
+      const stream = canvas.captureStream(30)
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9'
+      })
+
+      const chunks: Blob[] = []
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data)
+        }
+      }
+
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(chunks, { type: 'video/webm' })
+        await uploadToTikTok(blob)
+      }
+
+      mediaRecorder.start()
+
+      const drawFrame = () => {
+        ctx.clearRect(0, 0, 315, 560)
+        ctx.drawImage(videoElement, 0, 0, 315, 560)
+        
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'
+        ctx.fillRect(0, 0, 315, 560)
+        
+        ctx.fillStyle = 'white'
+        ctx.textAlign = 'center'
+        ctx.shadowColor = 'rgba(0,0,0,0.8)'
+        ctx.shadowBlur = 4
+        ctx.shadowOffsetX = 2
+        ctx.shadowOffsetY = 2
+        
+        ctx.font = 'bold 18px Arial'
+        const quoteLines = wrapText(ctx, `"${selectedQuote.q}"`, 280)
+        quoteLines.forEach((line: string, index: number) => {
+          ctx.fillText(line, 157.5, 200 + (index * 25))
+        })
+        
+        ctx.font = 'italic 16px Arial'
+        ctx.fillText(`— ${selectedQuote.a}`, 157.5, 200 + (quoteLines.length * 25) + 40)
+      }
+
+      videoElement.play()
+
+      const recordingDuration = 30000
+      let animationId: number
+
+      const animate = () => {
+        drawFrame()
+        animationId = requestAnimationFrame(animate)
+      }
+
+      animate()
+
+      setTimeout(() => {
+        cancelAnimationFrame(animationId)
+        mediaRecorder.stop()
+        videoElement.pause()
+      }, recordingDuration)
+
+    } catch (error) {
+      console.error('Error creating video for TikTok:', error)
+      alert('Failed to create video for TikTok. Please try again.')
+      setUploadingToTikTok(false)
+    }
   }
 
   return (
@@ -585,6 +735,61 @@ function App() {
                 <p className="text-gray-300 text-sm mt-3">
                   This will create a 30-second video with your quote overlay
                 </p>
+                
+                {/* TikTok Upload Section */}
+                <div className="mt-6 border-t border-white/20 pt-6">
+                  <h4 className="text-lg font-semibold text-white mb-4 flex items-center justify-center">
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12.5 0C5.6 0 0 5.6 0 12.5S5.6 25 12.5 25 25 19.4 25 12.5 19.4 0 12.5 0zM19.3 8.9c-1.2 0-2.4-.4-3.3-1.1v5.1c0 2.6-2.1 4.7-4.7 4.7s-4.7-2.1-4.7-4.7 2.1-4.7 4.7-4.7c.3 0 .5 0 .8.1v2.3c-.3-.1-.5-.1-.8-.1-1.3 0-2.4 1.1-2.4 2.4s1.1 2.4 2.4 2.4 2.4-1.1 2.4-2.4V2.3h2.3c.4 2.1 2.1 3.8 4.2 4.2v2.4z"/>
+                    </svg>
+                    Upload to TikTok
+                  </h4>
+                  
+                  {!tiktokAuthenticated ? (
+                    <div className="text-center">
+                      <button
+                        onClick={handleTikTokAuth}
+                        className="bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black text-white font-semibold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105 shadow-lg flex items-center mx-auto"
+                      >
+                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12.5 0C5.6 0 0 5.6 0 12.5S5.6 25 12.5 25 25 19.4 25 12.5 19.4 0 12.5 0zM19.3 8.9c-1.2 0-2.4-.4-3.3-1.1v5.1c0 2.6-2.1 4.7-4.7 4.7s-4.7-2.1-4.7-4.7 2.1-4.7 4.7-4.7c.3 0 .5 0 .8.1v2.3c-.3-.1-.5-.1-.8-.1-1.3 0-2.4 1.1-2.4 2.4s1.1 2.4 2.4 2.4 2.4-1.1 2.4-2.4V2.3h2.3c.4 2.1 2.1 3.8 4.2 4.2v2.4z"/>
+                        </svg>
+                        Connect to TikTok
+                      </button>
+                      <p className="text-gray-400 text-sm mt-2">
+                        Connect your TikTok account to upload videos directly
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <button
+                        onClick={createAndUploadToTikTok}
+                        disabled={uploadingToTikTok}
+                        className="bg-gradient-to-r from-black to-gray-800 hover:from-gray-800 hover:to-black disabled:from-gray-600 disabled:to-gray-700 text-white font-semibold py-3 px-6 rounded-full transition duration-300 ease-in-out transform hover:scale-105 disabled:scale-100 shadow-lg flex items-center mx-auto"
+                      >
+                        {uploadingToTikTok ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Uploading to TikTok...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M12.5 0C5.6 0 0 5.6 0 12.5S5.6 25 12.5 25 25 19.4 25 12.5 19.4 0 12.5 0zM19.3 8.9c-1.2 0-2.4-.4-3.3-1.1v5.1c0 2.6-2.1 4.7-4.7 4.7s-4.7-2.1-4.7-4.7 2.1-4.7 4.7-4.7c.3 0 .5 0 .8.1v2.3c-.3-.1-.5-.1-.8-.1-1.3 0-2.4 1.1-2.4 2.4s1.1 2.4 2.4 2.4 2.4-1.1 2.4-2.4V2.3h2.3c.4 2.1 2.1 3.8 4.2 4.2v2.4z"/>
+                            </svg>
+                            Upload to TikTok
+                          </>
+                        )}
+                      </button>
+                      <p className="text-gray-400 text-sm mt-2">
+                        This will create and upload your video directly to TikTok
+                      </p>
+                    </div>
+                  )}
+                </div>
               </motion.div>
             )}
 

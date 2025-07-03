@@ -1,53 +1,95 @@
-# React + TypeScript + Vite
+# JustLines - Quote Video Creator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Create beautiful videos with inspirational quotes using AI-powered topic analysis and background videos from Pexels.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🎯 **AI-Powered Topic Analysis**: Automatically categorizes quotes by topic
+- 🎥 **Dynamic Video Selection**: Curated background videos from Pexels
+- 📱 **TikTok Integration**: Upload videos directly to TikTok
+- 🎨 **Beautiful UI**: Modern, animated interface with Tailwind CSS
+- ⚡ **Fast Performance**: Built with React + TypeScript + Vite
+- 🔄 **Real-time Preview**: See how your quote will look on the video
 
-## Expanding the ESLint configuration
+## Quick Start
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd JustLines
+   ```
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys
+   ```
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+4. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+## API Setup
+
+### Required APIs
+
+1. **Pexels API** (for background videos)
+   - Sign up at [Pexels](https://www.pexels.com/api/)
+   - Get your API key
+   - Add to `.env` as `VITE_PEXELS_API_KEY`
+
+2. **TikTok API** (optional, for direct uploads)
+   - Create a TikTok Developer account
+   - Set up your app credentials
+   - See [TikTok Setup Guide](./TIKTOK_SETUP.md) for detailed instructions
+
+## How It Works
+
+1. **Select a Quote**: Choose from inspirational quotes
+2. **AI Analysis**: The app analyzes the quote's topic and mood
+3. **Video Selection**: Browse curated background videos
+4. **Create**: Generate a 30-second video with your quote overlay
+5. **Share**: Download or upload directly to TikTok
+
+## Technology Stack
+
+- **Frontend**: React 18 + TypeScript
+- **Styling**: Tailwind CSS
+- **Animations**: Framer Motion
+- **Build Tool**: Vite
+- **Video Processing**: Canvas API + MediaRecorder
+- **APIs**: Pexels, TikTok, Quote APIs
+
+## Project Structure
+
+```
+src/
+├── components/          # React components
+├── services/           # API services
+│   ├── quoteService.ts    # Quote fetching
+│   ├── topicService.ts    # AI topic analysis
+│   ├── videoService.ts    # Pexels video API
+│   └── tiktokService.ts   # TikTok integration
+├── App.tsx            # Main application
+└── main.tsx           # Entry point
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Contributing
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-export default tseslint.config([
-  globalIgnores(['dist']),
+## License
+
+MIT License - see LICENSE file for details
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
