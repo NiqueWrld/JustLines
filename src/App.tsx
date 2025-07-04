@@ -820,6 +820,11 @@ function App() {
                 
                 {/* TikTok Upload Toggle */}
                 <div className="mt-6 border-t border-white/20 pt-6">
+                  {uploadProgress && (
+  <div className="mt-4 text-center text-white bg-black/50 px-4 py-2 rounded-lg shadow">
+    {uploadProgress}
+  </div>
+)}
                   {!showTikTokOptions ? (
                     <div className="text-center">
                       <button
